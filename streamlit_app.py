@@ -48,7 +48,7 @@ def contains_inappropriate_content(text):
 
     # Check if any censored word is present in the text
     for word in censored_words:
-        if word in text.lower():  # Convert both text and word to lowercase for case-insensitive comparison
+        if word in text.split():  # Convert both text and word to lowercase for case-insensitive comparison
             return True
 
     return False

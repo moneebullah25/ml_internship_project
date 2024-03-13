@@ -18,6 +18,16 @@ Similarly if the user input prompt contains the senstive information like email,
 
 ![alt text](image-2.png)
 
+## Langsmith Tracing
+
+For quering where the answer is short
+
+![alt text](image-3.png)
+
+For quering where the answer is long
+
+![alt text](image-4.png)
+
 # Running Locally
 
 To simply run the chatbot application locally on our PC:
