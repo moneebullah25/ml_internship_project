@@ -1,3 +1,9 @@
+# OpenAI gpt-3.5-turbo model with Langchain, ChromaDB and OpenAIEmbeddings
+
+Run with command `streamlit run streamlit_app.py`
+
+![alt text](image.png)
+
 # Running Locally
 
 To simply run the chatbot application locally on our PC:

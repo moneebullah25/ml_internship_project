@@ -1,147 +1,120 @@
-from dotenv import load_dotenv
-import openai
-import time
-from datetime import datetime
 import streamlit as st
+import os
+import shutil
+from transformers import pipeline
+from langchain_community.document_loaders import PyPDFLoader
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.schema import Document
+from langchain.embeddings import OpenAIEmbeddings
+from langchain.vectorstores.chroma import Chroma
+import argparse
+from langchain.chat_models import ChatOpenAI
+from langchain.prompts import ChatPromptTemplate
+from dotenv import load_dotenv, find_dotenv
+
+_ : bool = load_dotenv(find_dotenv()) # read local .env file
+
+CHROMA_PATH = "Persist_dir"
+
+def split_text(documents: list[Document]):
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=300,
+        chunk_overlap=100,
+        length_function=len,
+        add_start_index=True,
+    )
+    chunks = text_splitter.split_documents(documents)
+    print(f"Split {len(documents)} documents into {len(chunks)} chunks.")
+
+    document = chunks[10]
+    print(document.page_content)
+    print(document.metadata)
+
+    return chunks
+
+def get_similar_docs(question, Vector_db, similar_doc_count):
+    similar_docs = Vector_db.similarity_search(question, similar_doc_count)
+
+    unique_docs = []
+    seen_doc_contents = set()
+
+    for doc in similar_docs:
+        doc_content = doc.page_content  # Assuming 'page_content' is the key for the document content
+        if doc_content not in seen_doc_contents:
+            unique_docs.append(doc)
+            seen_doc_contents.add(doc_content)
+
+    return unique_docs
+
+# Setup the app title
+st.title('Ask AI')
+
+# Interface for uploading documents
+pdf_files = st.file_uploader("Upload PDF files", accept_multiple_files=True)
+
+# pdf_files = ["attention-is-all-you-need-Paper.pdf"]
+Vector_db = None
+if pdf_files:
+    # Process uploaded documents
+    all_documents = []
+    for pdf_file in pdf_files:
+        loader = PyPDFLoader(pdf_file.name)
+        documents = loader.load()
+        all_documents.extend(documents)
+    
+    chunks = split_text(all_documents)
+    Vector_db = Chroma.from_documents(collection_name="document_docs", 
+                                      documents=chunks, 
+                                      embedding=OpenAIEmbeddings(model="text-embedding-3-large"), 
+                                      persist_directory=CHROMA_PATH)
+    Vector_db.persist()
 
 
-load_dotenv()
 
-client = openai.OpenAI()
+PROMPT_TEMPLATE = """Below is an instruction that describes a task. Write a response that appropriately completes the request.
 
-model = "gpt-3.5-turbo-1106"  # "gpt-3.5-turbo-16k"
+  Instruction:
+  Use only information in the following paragraphs to answer the question at the end.
+  Explain the answer with reference to these paragraphs.
+  If you don't have the information in below paragraphs then give response "I will get back to you on this".
 
+  {context}
+  
+  Question: {question}
 
-# == Hardcoded ids to be used once the first code run is done and the assistant was created
-thread_id = "thread_MsTubvtWgNjLVhxjhK4eOBME"
-assis_id = "asst_Me2BhQW6rDczo1BKpCGRKPmB"
+  Response:
+  """
 
+# Setup a session state message variable to hold all the old messages
+if 'messages' not in st.session_state:
+    st.session_state.messages = []
 
-# Initialize all the session
-if "file_id_list" not in st.session_state:
-    st.session_state.file_id_list = []
+# Display all the historical messages |
+for message in st.session_state.messages:
+    st.chat_message(message['role']).markdown(message['content'])
 
-if "start_chat" not in st.session_state:
-    st.session_state.start_chat = False
+# Build a prompt input template to display the prompts
+prompt = st.chat_input('Pass Your Prompt here')
+# If the user hits enter then
 
-if "thread_id" not in st.session_state:
-    st.session_state.thread_id = None
+if prompt:
+    # Display the prompt
+    st.chat_message('user').markdown(prompt)
+    st.session_state.messages.append({'role': 'user', 'content':prompt})
+    
+    # Search the DB.
+    results = Vector_db.similarity_search_with_relevance_scores(prompt, k=3)
+    
+    context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
+    prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
+    
+    final_prompt = prompt_template.format(context=context_text, question=prompt)
 
+    model = ChatOpenAI(model="gpt-3.5-turbo-1106")
+    answer = model.predict(prompt)
 
-# Set up our front end page
-st.set_page_config(page_title="Study Buddy - Understand Research Paper with AI", page_icon=":books:")
-
-
-# ==== Function definitions etc =====
-def upload_to_openai(filepath):
-    with open(filepath, "rb") as file:
-        response = client.files.create(file=file.read(), purpose="assistants")
-    return response.id
-
-
-# === Sidebar - where users can upload files
-file_uploaded = st.sidebar.file_uploader(
-    "Upload a file to be transformed into embeddings", key="file_upload"
-)
-
-# Upload file button - store the file ID
-if st.sidebar.button("Upload File"):
-    if file_uploaded:
-        with open(f"{file_uploaded.name}", "wb") as f:
-            f.write(file_uploaded.getbuffer())
-        another_file_id = upload_to_openai(f"{file_uploaded.name}")
-        st.session_state.file_id_list.append(another_file_id)
-        st.sidebar.write(f"File ID:: {another_file_id}")
-
-# Display those file ids
-if st.session_state.file_id_list:
-    st.sidebar.write("Uploaded File IDs:")
-    for file_id in st.session_state.file_id_list:
-        st.sidebar.write(file_id)
-        # Associate each file id with the current assistant
-        assistant_file = client.beta.assistants.files.create(
-            assistant_id=assis_id, file_id=file_id
-        )
-
-# Button to initiate the chat session
-if st.sidebar.button("Start Chatting..."):
-    if st.session_state.file_id_list:
-        st.session_state.start_chat = True
-
-        # Create a new thread for this chat session
-        chat_thread = client.beta.threads.create()
-        st.session_state.thread_id = chat_thread.id
-        st.write("Thread ID:", chat_thread.id)
-    else:
-        st.sidebar.warning(
-            "No files found. Please upload at least one file to get started."
-        )
-
-# the main interface ...
-st.title("Study Buddy")
-st.write("Learn fast by chatting with your documents")
-
-
-# Check sessions
-if st.session_state.start_chat:
-    if "openai_model" not in st.session_state:
-        st.session_state.openai_model = "gpt-3.5-turbo-1106"
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
-
-    # Show existing messages if any...
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
-
-    # chat input for the user
-    if prompt := st.chat_input("What's new?"):
-        # Add user message to the state and display on the screen
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.markdown(prompt)
-
-        # add the user's message to the existing thread
-        client.beta.threads.messages.create(
-            thread_id=st.session_state.thread_id, role="user", content=prompt
-        )
-
-        # Create a run with additioal instructions
-        run = client.beta.threads.runs.create(
-            thread_id=st.session_state.thread_id,
-            assistant_id=assis_id,
-            instructions="""Please answer the questions using the knowledge provided in the files.
-            when adding additional information, make sure to distinguish it with bold or underlined text.""",
-        )
-
-        # Show a spinner while the assistant is thinking...
-        with st.spinner("Wait... Generating response..."):
-            while run.status != "completed":
-                print("Retrieving")
-                time.sleep(5)
-                run = client.beta.threads.runs.retrieve(
-                    thread_id=st.session_state.thread_id, run_id=run.id
-                )
-            # Retrieve messages added by the assistant
-            messages = client.beta.threads.messages.list(
-                thread_id=st.session_state.thread_id
-            )
-            # Process and display assis messages
-            assistant_messages_for_run = [
-                message
-                for message in messages
-                if message.run_id == run.id and message.role == "assistant"
-            ]
-
-            for message in assistant_messages_for_run:
-                st.session_state.messages.append(
-                    {"role": "assistant", "content": message}
-                )
-                with st.chat_message("assistant"):
-                    st.markdown(message, unsafe_allow_html=True)
-
-    else:
-        # Promopt users to start chat
-        st.write(
-            "Please upload at least a file to get started by clicking on the 'Start Chat' button"
-        )
+    st.chat_message('assistant').markdown(answer)
+    st.session_state.messages.append({
+        'role': 'assistant', 
+        'content': answer
+    })
