@@ -4,6 +4,20 @@ Run with command `streamlit run streamlit_app.py`
 
 ![alt text](image.png)
 
+## Guardrails
+
+### Inappropriate Content
+
+If the user text contains censored words or the model predicts the answer with the censored words the application will automatically hide the answer and display the error message `Your prompt contains inappropriate content. Please rephrase.`
+
+![alt text](image-1.png)
+
+### Sensitive Information 
+
+Similarly if the user input prompt contains the senstive information like email, phone number, or credit/debit card number or the model predicts the answer with the senstive information like email, phone number, or credit/debit card number the application will automatically hide the answer and display the error message `Your prompt contains sensitive information. Please rewrite.`
+
+![alt text](image-2.png)
+
 # Running Locally
 
 To simply run the chatbot application locally on our PC:

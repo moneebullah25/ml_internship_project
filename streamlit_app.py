@@ -11,10 +11,47 @@ import argparse
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from dotenv import load_dotenv, find_dotenv
+import re
 
 _ : bool = load_dotenv(find_dotenv()) # read local .env file
 
 CHROMA_PATH = "Persist_dir"
+
+def detect_sensitive_information(text):
+    sensitive_info = []
+
+    # Regular expressions for detecting sensitive information
+    email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+    phone_pattern = r'\b(?:\d{3}[-.\s]?)?\d{3}[-.\s]?\d{4}\b'
+    credit_card_pattern = r'\b(?:\d[ -]*?){13,16}\b'
+
+    # Detect email addresses
+    emails = re.findall(email_pattern, text)
+    if emails:
+        sensitive_info.extend(emails)
+
+    # Detect phone numbers
+    phones = re.findall(phone_pattern, text)
+    if phones:
+        sensitive_info.extend(phones)
+
+    # Detect credit card numbers
+    credit_cards = re.findall(credit_card_pattern, text)
+    if credit_cards:
+        sensitive_info.extend(credit_cards)
+
+    return sensitive_info
+
+def contains_inappropriate_content(text):
+    # List of censored words
+    censored_words = ["fuck", "shit", "damn", "ass", "bitch", "bastard", "nigga"]
+
+    # Check if any censored word is present in the text
+    for word in censored_words:
+        if word in text.lower():  # Convert both text and word to lowercase for case-insensitive comparison
+            return True
+
+    return False
 
 def split_text(documents: list[Document]):
     text_splitter = RecursiveCharacterTextSplitter(
@@ -102,19 +139,31 @@ if prompt:
     st.chat_message('user').markdown(prompt)
     st.session_state.messages.append({'role': 'user', 'content':prompt})
     
-    # Search the DB.
-    results = Vector_db.similarity_search_with_relevance_scores(prompt, k=3)
-    
-    context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
-    prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
-    
-    final_prompt = prompt_template.format(context=context_text, question=prompt)
+    # Check if the prompt contains inappropriate content
+    if contains_inappropriate_content(prompt):
+        st.warning("Your prompt contains inappropriate content. Please rephrase.")
+    elif detect_sensitive_information(prompt):
+        st.warning("Your prompt contains sensitive information. Please rewrite.")
+    else:
+        # Search the DB.
+        results = Vector_db.similarity_search_with_relevance_scores(prompt, k=3)
+        
+        context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
+        prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
+        
+        final_prompt = prompt_template.format(context=context_text, question=prompt)
 
-    model = ChatOpenAI(model="gpt-3.5-turbo-1106")
-    answer = model.predict(prompt)
+        model = ChatOpenAI(model="gpt-3.5-turbo-1106")
+        answer = model.predict(prompt)
 
-    st.chat_message('assistant').markdown(answer)
-    st.session_state.messages.append({
-        'role': 'assistant', 
-        'content': answer
-    })
+        # Check if the generated answer contains inappropriate content
+        if contains_inappropriate_content(answer):
+            st.warning("The generated answer contains inappropriate content. Please try again.")
+        elif detect_sensitive_information(prompt):
+            st.warning("Your prompt contains sensitive information. Please rewrite.")
+        else:
+            st.chat_message('assistant').markdown(answer)
+            st.session_state.messages.append({
+                'role': 'assistant', 
+                'content': answer
+            })
