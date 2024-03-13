@@ -1,4 +1,23 @@
-# Build a Docker image
+# OpenAI with Assistant API and Knowledge Retreival
+
+First run `python app.py` and then yun the `streamlit_app.py` using command `streamlit run streamlit_app.py`. Once the interface is running on the `8501` port upload the research paper you want the AI to help you with. Make sure it is less than 20 pages so that the OpenAI generates the response to the query quickly. Once uploaded chat functionality will be unlocked. You can now ask any questions against that research paper.
+
+![alt text](image.png)
+
+# Running Locally
+
+To simply run the chatbot application locally on our PC:
+
+```bash
+pip install -r requirements
+streamlit run streamlit_app.py
+```
+
+# Running on Docker
+
+Below are the instructions to build and run the container. Once we build and run the container we could visit `http://0.0.0.0:8501` or `http://localhost:8501` to access the chatbot application. 
+
+## Build a Docker image
 
 The docker build command builds an image from a Dockerfile. Run the following command from the main application directory on your server to build the image:
 
@@ -18,7 +37,7 @@ REPOSITORY   TAG       IMAGE ID       CREATED              SIZE
 streamlit    latest    70b0759a094d   About a minute ago   1.02GB
 ```
 
-# Run the Docker container
+## Run the Docker container
 
 Now that you have built the image, you can run the container by executing:
 
