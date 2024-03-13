@@ -1,9 +1,3 @@
-# OpenAI with Assistant API and Knowledge Retreival
-
-First run `python app.py` and then yun the `streamlit_app.py` using command `streamlit run streamlit_app.py`. Once the interface is running on the `8501` port upload the research paper you want the AI to help you with. Make sure it is less than 20 pages so that the OpenAI generates the response to the query quickly. Once uploaded chat functionality will be unlocked. You can now ask any questions against that research paper.
-
-![alt text](image.png)
-
 # Running Locally
 
 To simply run the chatbot application locally on our PC:
