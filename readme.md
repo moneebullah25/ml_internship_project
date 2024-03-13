@@ -24,7 +24,11 @@ For quering where the answer is short
 
 ![alt text](image-3.png)
 
+https://smith.langchain.com/public/51a975ce-bbb1-4b05-83f3-8afc71f9d270/r
+
 For quering where the answer is long
+
+https://smith.langchain.com/public/b65ab4a2-1a69-4592-b80b-0f9638f4b9d6/r
 
 ![alt text](image-4.png)
 
