@@ -1,4 +1,39 @@
-# Build a Docker image
+# Running on Google Colab
+
+![alt text](image.png)
+
+First make sure that the pdf we want to ask questions from is upload on the colab workspace. Then we need to run all the cells in the notebook once that is done we could see the IP Address and a Link like below in the screenshot:
+
+```bash
+34.126.97.245
+npx: installed 22 in 2.572s
+your url is: https://happy-parrots-wink.loca.lt
+```
+
+![alt text](image-1.png)
+
+We need to verify the tunnel connection by providing the `34.126.97.245` in the text field.
+
+![alt text](image-3.png)
+
+Once we open the chatbot application we can see the following interface. Unfortunately the free tier package on the Google Colab will not allow us to even run the Dolly-3b model so we need to move to OpenAI API for Knowledge Based Information retrival see `openai` branch of this repository. 
+
+![alt text](image-2.png)
+
+# Running Locally
+
+To simply run the chatbot application locally on our PC:
+
+```bash
+pip install -r requirements
+streamlit run streamlit_app.py
+```
+
+# Running on Docker
+
+Below are the instructions to build and run the container. Once we build and run the container we could visit `http://0.0.0.0:8501` or `http://localhost:8501` to access the chatbot application. 
+
+## Build a Docker image
 
 The docker build command builds an image from a Dockerfile. Run the following command from the main application directory on your server to build the image:
 
@@ -18,7 +53,7 @@ REPOSITORY   TAG       IMAGE ID       CREATED              SIZE
 streamlit    latest    70b0759a094d   About a minute ago   1.02GB
 ```
 
-# Run the Docker container
+## Run the Docker container
 
 Now that you have built the image, you can run the container by executing:
 
