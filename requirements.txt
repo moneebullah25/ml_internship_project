@@ -1,5 +1,8 @@
 accelerate==0.28.0
 bitsandbytes==0.43.0
+bcrypt==4.1.2
+chroma-hnswlib==0.7.3
+chromadb==0.4.24
 langchain==0.1.12
 langchain-community==0.0.28
 langchain-core==0.1.31
