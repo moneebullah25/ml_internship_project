@@ -13,7 +13,3 @@ PyPDF2==2.11.1
 python-dotenv==0.21.0
 pysqlite3-binary==0.5.2.post3
 streamlit==1.32.1
-transformers==4.38.2
-torch==2.2.0
-torchaudio==2.2.0
-torchvision==0.17.0
