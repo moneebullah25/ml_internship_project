@@ -84,7 +84,7 @@ def get_similar_docs(question, Vector_db, similar_doc_count):
     return unique_docs
 
 # Setup the app title
-st.title('Ask AI')
+st.title('Ask Research AI')
 
 # Interface for uploading documents
 pdf_files = st.file_uploader("Upload PDF files", accept_multiple_files=True)
