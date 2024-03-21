@@ -1,4 +1,4 @@
-# OpenAI gpt-3.5-turbo model with Langchain, ChromaDB and OpenAIEmbeddings
+# RAG system using gpt-3.5-turbo model with Langchain, ChromaDB and OpenAIEmbeddings
 
 Install requirements and then run with command `streamlit run streamlit_app.py` or access url [Deployed Link](https://mlinternshipproject-nfu6uy3azastkezj9n3hdx.streamlit.app/)
 
