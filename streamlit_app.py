@@ -162,7 +162,7 @@ if prompt:
         prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
         
         final_prompt = prompt_template.format(context=context_text, question=prompt)
-
+        print(final_prompt)
         model = ChatOpenAI(model="gpt-3.5-turbo-1106")
         answer = model.invoke(prompt)
 
